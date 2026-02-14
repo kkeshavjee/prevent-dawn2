@@ -11,7 +11,7 @@
     *   [ ] Read PRD Testing Requirements
 *   [ ] **Implementation**
     *   [x] Create `tests/integration/` (Initial stubs completed)
-    *   [ ] Implement End-to-End API tests
+    *   [x] Implement End-to-End API tests
 
 ## Completed Features
 *   [x] **Integrate MCP Server**: [Issue #3](https://github.com/kkeshavjee/prevent-antigravity/issues/3)
@@ -40,7 +40,7 @@
 > **Execution Rule:** Complete all tasks in Phase 1 before moving to Phase 2.
 
 ### Phase 1: Foundation (Infrastructure)
-*   [ ] **Integration Tests**: Comprehensive backend testing to ensure stability before adding agents.
+*   [x] **Integration Tests**: Comprehensive backend testing to ensure stability before adding agents.
 *   [ ] **Authentication & RBAC**: Secure the app before adding "Patient Matching".
 *   [ ] **Frontend Refactor**: Apply global "Prismatic" theme to ensure UI consistency for new features.
 *   [x] **Repository Pattern**: [Issue #7](https://github.com/kkeshavjee/prevent-antigravity/issues/7) - Abstract data access.

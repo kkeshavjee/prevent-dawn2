@@ -17,6 +17,10 @@ export const api = {
         const response = await apiClient.post('/api/chat', { user_id: userId, user_input: userInput });
         return response.data;
     },
+    warmup: async () => {
+        const response = await apiClient.post('/api/chat/warmup');
+        return response.data;
+    },
     admin: {
         getAgents: async () => {
             const response = await apiClient.get('/api/admin/agents');

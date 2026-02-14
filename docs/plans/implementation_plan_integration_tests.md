@@ -29,9 +29,10 @@ Establish a robust end-to-end testing suite that ensures the stability of the Mu
 ## 4. Key Implementation Details
 
 ### Mock Strategy
-- **Patch Location**: `backend.mcp_server.mcp_server.dspy.Predict` (not `dspy.Predict`)
-- **Reason**: Python mocking requires patching at the import location, not the definition
-- **Pattern**: Tests use `global_llm_mock` fixture and reconfigure it, avoiding conflicting patches
+### Mock Strategy
+- **Patch Location**: `orchestrator.mcp_server.predict` (instance method)
+- **Reason**: The global `dspy.Predict` objects are instantiated at import time by the singleton `Orchestrator`. Patching `dspy` later in tests fails to affect these existing instances.
+- **Pattern**: Tests use `patch.object(orchestrator.mcp_server, 'predict')` to intercept LLM calls directly at the gateway, regardless of internal implementation.
 
 ### Test Environment
 - Database: `test_antigravity.db` (set via `ANTIGRAVITY_DB` env var)

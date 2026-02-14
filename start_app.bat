@@ -54,7 +54,7 @@ echo [3/3] Starting Application...
 
 :: Backend
 echo Starting Backend in a new window...
-start "Antigravity Backend" cmd /k "backend\venv\Scripts\activate && python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8001"
+start "Antigravity Backend" cmd /k "backend\venv\Scripts\activate && python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000"
 
 :: Wait a moment for backend to initialize
 timeout /t 2 /nobreak >nul
@@ -70,8 +70,8 @@ echo.
 echo Backend logs: Check the 'Antigravity Backend' window
 echo Frontend logs: Check the 'Antigravity Frontend' window
 echo.
-echo Backend URL:  http://127.0.0.1:8001
-echo Frontend URL: http://127.0.0.1:8000
+echo Backend URL:  http://127.0.0.1:8000
+echo Frontend URL: http://127.0.0.1:5173
 echo ==========================================
 echo.
 pause

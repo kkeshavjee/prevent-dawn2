@@ -16,6 +16,21 @@ def setup_test_env(monkeypatch):
     monkeypatch.setenv("ANTIGRAVITY_DB", TEST_DB_PATH)
     monkeypatch.setenv("GOOGLE_API_KEY", "dummy_google_key")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-dummy_openai_key")
+    
+    # Reset the singleton orchestrator state to prevent test-to-test leakage
+    from backend.main import orchestrator
+    orchestrator.states = {}
+    
+    # CRITICAL FIX for "RuntimeError: Lock is bound to different loop"
+    # We must force a fresh lock for every test because the global orchestrator 
+    # persists across tests while the event loop changes.
+    if hasattr(orchestrator.persistence, "_lock"):
+        orchestrator.persistence._lock = None
+        
+    # CRITICAL FIX: Ensure Singleton uses the TEST DB path, not the one loaded at import time
+    if hasattr(orchestrator.persistence, "db_path"):
+        orchestrator.persistence.db_path = TEST_DB_PATH
+
     yield
 
 @pytest.fixture(scope="session", autouse=True)

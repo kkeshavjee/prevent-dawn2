@@ -102,3 +102,17 @@ These commands are stored here for the Agent to execute upon request.
     - **Resilience**: Uses `tenacity` for exponential backoff (retries) on API failure or rate limits (429).
     - **Observability**: Logs latency for every request to monitor system health.
 - **Signature Support**: Supports mapping `user_profile`, `user_context`, and `history` fields automatically.
+
+## 8. Testing Statefull Singletons
+- **The Issue**: Singleton objects (like the `Orchestrator`) that hold state (like database locks or user sessions) persist across `pytest` tests, even though `pytest` creates a new event loop for each test. This causes `RuntimeError: Lock bound to different loop`.
+- **The Solution**:
+    1.  **Lazy Locking**: Do not initialize `asyncio.Lock` in `__init__`. Use a `@property` that creates it on first access.
+    2.  **Fixture Reset**: In `conftest.py`, explicitly clear the singleton's state (`orchestrator.states = {}`) AND nullify the lock (`orchestrator.persistence._lock = None`) before every test. This forces the lazy property to create a *new* lock bound to the *current* test's event loop.
+- **Mocking**: When mocking methods on a singleton, do not patch the class or module if the instance already exists. Patch the *instance method* directly (e.g., `patch.object(orchestrator.mcp_server, 'predict')`). If the method is `async`, ensure the mock returns an awaitable or use `AsyncMock`.
+
+## 9. Agent Logic & Infinite Loops
+- **The Trap**: An Agent (like the `IntakeAgent`) runs in a loop where it checks state, sends a response, and processes intent. If state flags (like "known name") are checked unconditionally (e.g., every time a user message is received), it can create an infinite loop of "Welcome Back" messages even in the middle of a conversation.
+- **The Fix**:
+    - **State Flags**: Use transient context variables (e.g., `greeting_completed`) to track if a specific logic block has already executed for the session.
+    - **Guard Clauses**: Wraps logic blocks in checks like `if known_user and not greeting_completed`.
+    - **Pre-seeding Tests**: Tests should pre-seed the database with valid state (including flags if necessary) to test "mid-stream" scenarios (e.g., Known User continues conversation) without triggering startup logic.

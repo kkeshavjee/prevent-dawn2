@@ -9,7 +9,7 @@ from backend.services.data_loader import DataLoader
 from backend.services.llm_config import configure_dspy
 import os
 
-from backend.services.persistence import AsyncPersistence
+from backend.services.persistence import get_persistence
 from backend.mcp_server.mcp_server import MCPServer
 
 class Orchestrator:
@@ -23,7 +23,7 @@ class Orchestrator:
             "coaching": CoachingAgent(self.mcp_server)
         }
         self.states: Dict[str, AgentState] = {}
-        self.persistence = AsyncPersistence()  
+        self.persistence = get_persistence()  
         # Note: self.persistence.init_db() needs to be awaited, can't be in __init__
         # We will check table existence on first access or use a startup event in main.py
         

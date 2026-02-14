@@ -24,25 +24,25 @@ export default function Chat() {
     useEffect(scrollToBottom, [messages]);
 
     useEffect(() => {
-        // Initial Greeting using Backend Intelligence
-        const fetchGreeting = async () => {
-            // Only fetch if empty to avoid double-fetching
-            if (messages.length === 0) {
-                setIsLoading(true);
+        // FAST PATH: Immediate Static Greeting
+        if (messages.length === 0) {
+            setMessages([{
+                sender: 'ai',
+                text: "Hello! I'm Dawn, your Diabetes Prevention Assistant. To get started, may I ask your name?"
+            }]);
+
+            // BACKGROUND: Probe providers while user reads greeting
+            const warmupProviders = async () => {
                 try {
-                    // Send a focused prompt to trigger the intake/welcome flow
-                    // We don't display this prompt to the user
-                    const result = await api.chat(userId, "Hello.");
-                    setMessages([{ sender: 'ai', text: result.response }]);
+                    // Start the backend probe
+                    await api.warmup();
+                    console.log("MCP: Background warmup initiated.");
                 } catch (e) {
-                    // Fallback if backend is offline
-                    setMessages([{ sender: 'ai', text: "Hello! I'm Dawn. I'm having trouble connecting to my brain right now, but I'm here to help once we're online." }]);
-                } finally {
-                    setIsLoading(false);
+                    console.warn("MCP: Warmup probe failed or was ignored.", e);
                 }
-            }
-        };
-        fetchGreeting();
+            };
+            warmupProviders();
+        }
     }, [userId]); // Re-run if userId changes (e.g. manual input)
 
     const handleSend = async () => {

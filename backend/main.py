@@ -98,6 +98,17 @@ async def get_config_info():
         "brain_connectivity": "Online" if stack_info else "Offline"
     }
 
+@app.post("/api/chat/warmup")
+async def chat_warmup():
+    """
+    Triggers a background probe of LLM providers to pre-calculate health status.
+    Called by the frontend during idle time (e.g. while showing static greeting).
+    """
+    import asyncio
+    # Fire and forget
+    asyncio.create_task(orchestrator.mcp_server.warmup())
+    return {"status": "warmup_initiated"}
+
 # --- Chat Endpoints ---
 
 @app.post("/api/chat", response_model=OrchestratorResponse)

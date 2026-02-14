@@ -10,53 +10,68 @@ load_dotenv("backend/.env") # Fallback if running from root
 def get_lm_stack() -> List[dspy.LM]:
     """
     Returns a list of configured DSPy LM objects in order of priority:
-    1. Gemini (Primary Key)
-    2. Gemini (Secondary Key)
-    3. OpenAI (Fallback)
+    1. OpenAI (NOW PRIMARY - for consistency/speed)
+    2. Gemini (Secondary Keys)
     """
     lms = []
     
-    # 1. Gemini Primary
-    google_key_1 = os.getenv("GOOGLE_API_KEY")
-    if google_key_1:
-        try:
-            # Using generic dspy.LM for flexibility
-            lm = dspy.LM(model="gemini/gemini-2.0-flash", api_key=google_key_1)
-            # Tagging for identification
-            lm.provider_name = "Gemini Primary"
-            lms.append(lm)
-        except Exception as e:
-            print(f"Error checking Gemini Primary: {e}")
-
-    # 2. Gemini Secondary
-    google_key_2 = os.getenv("GOOGLE_API_KEY_2")
-    if google_key_2:
-        try:
-            lm = dspy.LM(model="gemini/gemini-2.0-flash", api_key=google_key_2)
-            lm.provider_name = "Gemini Secondary"
-            lms.append(lm)
-        except Exception as e:
-            print(f"Error checking Gemini Secondary: {e}")
-
-    # 3. Gemini Tertiary
-    google_key_3 = os.getenv("GOOGLE_API_KEY_3")
-    if google_key_3:
-        try:
-            lm = dspy.LM(model="gemini/gemini-2.0-flash", api_key=google_key_3)
-            lm.provider_name = "Gemini Tertiary"
-            lms.append(lm)
-        except Exception as e:
-            print(f"Error checking Gemini Tertiary: {e}")
-
-    # 4. OpenAI Fallback
+    # 1. OpenAI (Promoted to Primary for evaluation)
     openai_key = os.getenv("OPENAI_API_KEY")
     if openai_key:
         try:
             lm = dspy.LM(model="openai/gpt-4o-mini", api_key=openai_key)
-            lm.provider_name = "OpenAI Fallback"
+            lm.provider_name = "OpenAI Primary"
             lms.append(lm)
         except Exception as e:
             print(f"Error checking OpenAI: {e}")
+
+    # 2. Gemini Primary (Now as Fallback)
+    google_key_1 = os.getenv("GOOGLE_API_KEY")
+    if google_key_1:
+        try:
+            lm = dspy.LM(model="gemini/gemini-2.0-flash", api_key=google_key_1)
+            lm.provider_name = "Gemini Backup 1"
+            lms.append(lm)
+        except Exception as e:
+            print(f"Error checking Gemini Primary: {e}")
+
+    # 3. Gemini Secondary
+    google_key_2 = os.getenv("GOOGLE_API_KEY_2")
+    if google_key_2:
+        try:
+            lm = dspy.LM(model="gemini/gemini-2.0-flash", api_key=google_key_2)
+            lm.provider_name = "Gemini Backup 2 (2.0)"
+            lms.append(lm)
+        except Exception as e:
+            print(f"Error checking Gemini Secondary: {e}")
+
+    # 4. Gemini Tertiary (New Slot)
+    google_key_3 = os.getenv("GOOGLE_API_KEY_3")
+    if google_key_3:
+        try:
+            lm = dspy.LM(model="gemini/gemini-2.0-flash", api_key=google_key_3)
+            lm.provider_name = "Gemini Backup 3 (2.0)"
+            lms.append(lm)
+        except Exception as e:
+            print(f"Error checking Gemini Tertiary: {e}")
+
+    # 5. High-Stability Fallback (Gemini 1.5 Flash)
+    if google_key_1:
+         try:
+            lm = dspy.LM(model="gemini/gemini-1.5-flash-latest", api_key=google_key_1)
+            lm.provider_name = "Gemini Stability Fallback (1.5)"
+            lms.append(lm)
+         except Exception as e:
+            pass
+
+    # 6. Ultra-High Reliability Fallback (Gemini 1.5 Flash 8B)
+    if google_key_1:
+         try:
+            lm = dspy.LM(model="gemini/gemini-1.5-flash-8b-latest", api_key=google_key_1)
+            lm.provider_name = "Gemini Ultra-Resilient (8B)"
+            lms.append(lm)
+         except Exception as e:
+            pass
             
     return lms
 
