@@ -1,10 +1,33 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from contextlib import asynccontextmanager
 from backend.orchestrator.orchestrator import Orchestrator
 from backend.models.data_models import OrchestratorRequest, OrchestratorResponse, PatientProfile
+from backend.auth.database import init_db, seed_admin
+from backend.auth.router import router as auth_router
+from backend.auth.assignments import router as assignments_router
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan handler - runs on startup/shutdown."""
+    # Startup: Initialize auth database
+    print("Initializing authentication database...")
+    init_db()
+    seed_admin()  # Create default admin for testing
+    print("Auth database initialized.")
+    yield
+    # Shutdown: cleanup if needed
+    print("Shutting down...")
+
+
+app = FastAPI(
+    title="PREVENT Dawn API",
+    description="Diabetes Prevention Bot Backend with PHIPA-compliant Authentication",
+    version="1.1.0",
+    lifespan=lifespan
+)
 
 # Configure CORS to allow frontend to communicate with backend
 app.add_middleware(
@@ -16,11 +39,17 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://localhost:8080",
         "http://127.0.0.1:8080",
+        "http://10.0.0.51:8080",  # Local network IP
     ],
+    allow_origin_regex=r"http://10\.0\.0\.\d+:\d+",  # Allow any local network origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include auth routers
+app.include_router(auth_router)
+app.include_router(assignments_router)
 
 orchestrator = Orchestrator()
 
@@ -49,6 +78,7 @@ async def switch_api_key(config: KeyConfigRequest):
     """
     Switch the active API Key at runtime.
     """
+    import os
     new_key = None
     model_name = None
     
@@ -125,22 +155,42 @@ async def chat(request: OrchestratorRequest):
 from backend.services.data_loader import DataLoader
 import os
 
-# Initialize data loader (assuming file is in data/ or root)
-# Adjust path as necessary. For now, using a relative path assuming execution from root
-# Adjust path as necessary. Now in backend/data/
-# Using absolute path logic similar to orchestrator or relative to this file
+# Initialize data loader - use new backend/data path
 data_path = os.path.join(os.path.dirname(__file__), "data", "PREVENT_Inform_Table_V2 (2).xlsx")
-# Fallback hardcoded if needed, but relative is safer now
 EXCEL_PATH = data_path 
 data_loader = DataLoader(EXCEL_PATH)
 
 @app.get("/api/patient/lookup", response_model=PatientProfile)
 async def lookup_patient(name: str):
+    """
+    Look up patient by name. Returns profile from Excel or creates demo profile.
+    """
     profile = data_loader.get_patient_by_name(name)
-    if not profile:
-        raise HTTPException(status_code=404, detail="Patient not found")
     
-    # Returning profile directly
+    if not profile:
+        # Create a demo profile for new users not in the Excel file
+        from backend.models.data_models import Biomarkers, RiskLevel
+        profile = PatientProfile(
+            user_id=f"demo_{name.lower().replace(' ', '_')}",
+            name=name.title(),
+            age=45,
+            diabetes_risk_score=RiskLevel.MODERATE,
+            risk_score_numeric=55,
+            biomarkers=Biomarkers(
+                a1c=5.9,
+                fbs=5.8,
+                systolic_bp=128,
+                diastolic_bp=82,
+                ldl=3.2,
+                hdl=1.1,
+                total_cholesterol=5.0,
+                weight=82,
+                height=172
+            ),
+            motivation_level="Contemplation",
+            physician_name="Dr. Smith"
+        )
+    
     return profile
 
 from backend.api.admin import router as admin_router
@@ -167,4 +217,3 @@ async def health_check():
 @app.get("/")
 async def root():
     return {"message": "Diabetes Prevention Bot Backend is running!", "docs_url": "/docs"}
-

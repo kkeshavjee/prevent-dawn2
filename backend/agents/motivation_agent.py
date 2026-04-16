@@ -1,60 +1,41 @@
 from backend.agents.base_agent import BaseAgent
 from backend.models.data_models import AgentState
 from backend.models.signatures import MotivationSignature
-from backend.mcp_server.mcp_server import MCPServer
+import dspy
 
 class MotivationAgent(BaseAgent):
-    def __init__(self, mcp_server: MCPServer):
-        super().__init__(mcp_server)
+    def __init__(self):
+        self.predictor = dspy.Predict(MotivationSignature)
 
     async def process(self, user_input: str, state: AgentState) -> dict:
-        # Call Gemini via MCP Server (handles history and profile injection)
-        result = await self.mcp_server.predict(MotivationSignature, state, user_input=user_input)
-        
-        # Defensive access to all optional fields
-        response_text = getattr(result, 'response', "I'm listening. Tell me more.")
-        readiness_score = getattr(result, 'readiness_score', None)
-        importance_rating = getattr(result, 'importance_rating', None)
-        confidence_rating = getattr(result, 'confidence_rating', None)
-        readiness_stage = getattr(result, 'readiness_stage', None)
-        barriers = getattr(result, 'barriers', None)
-        facilitators = getattr(result, 'facilitators', None)
-        
-        updated_context = {}
-        
         try:
-            if readiness_score and float(readiness_score) > 0:
-                updated_context["readiness_score"] = float(readiness_score)
-                state.patient_profile.motivation_level = f"Readiness: {readiness_score}/10"
-
-            if importance_rating and float(importance_rating) > 0:
-                rating = float(importance_rating)
-                updated_context["importance_rating"] = rating
-                state.patient_profile.importance_rating = rating
-                
-            if confidence_rating and float(confidence_rating) > 0:
-                rating = float(confidence_rating)
-                updated_context["confidence_rating"] = rating
-                state.patient_profile.confidence_rating = rating
-        except (ValueError, TypeError):
-            pass
+            # Format history
+            history_str = "\n".join([f"{m.role}: {m.content}" for m in state.conversation_history[-5:]])
             
-        if readiness_stage:
-            stage = str(readiness_stage).lower()
-            updated_context["readiness_stage"] = stage
-            state.patient_profile.readiness_stage = stage
+            # Call Gemini via DSPy
+            result = self.predictor(history=history_str, user_input=user_input)
+            
+            updated_context = {}
+            if result.readiness_score and float(result.readiness_score) > 0:
+                updated_context["readiness_score"] = float(result.readiness_score)
+                state.patient_profile.motivation_level = f"Readiness: {result.readiness_score}/10"
 
-        if barriers:
-            barriers_list = [b.strip() for b in str(barriers).split(',')] if ',' in str(barriers) else [str(barriers)]
-            state.patient_profile.barriers = barriers_list
-            updated_context["barriers"] = barriers_list
-
-        if facilitators:
-            facilitators_list = [f.strip() for f in str(facilitators).split(',')] if ',' in str(facilitators) else [str(facilitators)]
-            state.patient_profile.facilitators = facilitators_list
-            updated_context["facilitators"] = facilitators_list
-
-        return {
-            "response": response_text,
-            "updated_context": updated_context
-        }
+            return {
+                "response": result.response,
+                "updated_context": updated_context
+            }
+        except Exception as e:
+            # Fallback response if DSPy/LLM fails
+            print(f"[MotivationAgent] Error: {e}")
+            
+            name = state.patient_profile.name or "there"
+            responses = [
+                f"Thanks for sharing, {name}. It sounds like you're thinking about making some positive changes. On a scale of 1-10, how important is preventing diabetes to you?",
+                f"I appreciate you opening up, {name}. What would be a small first step you could take this week towards better health?",
+                f"That's great to hear, {name}. What motivates you most to work on your health - is it family, feeling better, or something else?",
+            ]
+            import random
+            return {
+                "response": random.choice(responses),
+                "updated_context": {}
+            }

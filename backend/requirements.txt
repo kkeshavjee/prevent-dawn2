@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 dspy-ai
-pydantic
+pydantic[email]
 python-dotenv
 httpx
 google-generativeai
@@ -9,3 +9,12 @@ openpyxl
 pandas
 aiosqlite
 openai
+# Authentication dependencies
+sqlalchemy
+passlib[bcrypt]
+python-jose[cryptography]
+twilio
+# Gmail OAuth2
+google-auth
+google-auth-oauthlib
+google-api-python-client
