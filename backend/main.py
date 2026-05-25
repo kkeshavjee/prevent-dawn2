@@ -7,6 +7,8 @@ from backend.models.data_models import OrchestratorRequest, OrchestratorResponse
 from backend.auth.database import init_db, seed_admin
 from backend.auth.router import router as auth_router
 from backend.auth.assignments import router as assignments_router
+from backend.auth.dependencies import get_current_user, get_verified_patient, get_current_admin
+from backend.auth.models import User
 
 
 @asynccontextmanager
@@ -114,9 +116,9 @@ async def switch_api_key(config: KeyConfigRequest):
 # --- Chat Endpoints ---
 
 @app.post("/api/chat", response_model=OrchestratorResponse)
-async def chat(request: OrchestratorRequest):
+async def chat(request: OrchestratorRequest, current_user: User = Depends(get_current_user)):
     try:
-        result = await orchestrator.process_request(request.user_id, request.user_input)
+        result = await orchestrator.process_request(current_user.id, request.user_input)
         
         # Robustly handle the response content
         raw_response = result.get("response")
@@ -161,7 +163,7 @@ EXCEL_PATH = data_path
 data_loader = DataLoader(EXCEL_PATH)
 
 @app.get("/api/patient/lookup", response_model=PatientProfile)
-async def lookup_patient(name: str):
+async def lookup_patient(name: str, current_user: User = Depends(get_verified_patient)):
     """
     Look up patient by name. Returns profile from Excel or creates demo profile.
     """
@@ -197,7 +199,7 @@ from backend.api.admin import router as admin_router
 app.include_router(admin_router)
 
 @app.get("/api/debug/state/{user_id}")
-async def get_state_debug(user_id: str):
+async def get_state_debug(user_id: str, current_user: User = Depends(get_current_admin)):
     """
     Debug endpoint for integration tests to verify internal state progression.
     NOT for production use.

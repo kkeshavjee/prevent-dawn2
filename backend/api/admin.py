@@ -1,7 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from typing import List, Dict
 from pydantic import BaseModel
 from backend.orchestrator.orchestrator import Orchestrator
+from backend.auth.dependencies import get_current_admin
+from backend.auth.models import User
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -22,7 +24,7 @@ class ConversationLog(BaseModel):
     last_active: str
 
 @router.get("/agents", response_model=List[AgentConfig])
-async def get_agents():
+async def get_agents(current_user: User = Depends(get_current_admin)):
     return [
         AgentConfig(name="Intake Agent", description="Handles onboarding", status="Active"),
         AgentConfig(name="Motivation Agent", description="Assesses readiness", status="Active"),
@@ -31,7 +33,7 @@ async def get_agents():
     ]
 
 @router.get("/conversations", response_model=List[ConversationLog])
-async def get_conversations():
+async def get_conversations(current_user: User = Depends(get_current_admin)):
     return [
         ConversationLog(user_id="user_123", message_count=15, last_active="2025-10-26T10:00:00"),
         ConversationLog(user_id="user_456", message_count=5, last_active="2025-10-26T09:30:00"),
