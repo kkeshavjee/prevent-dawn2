@@ -2,22 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, Loader2, User, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/api/client';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Chat() {
+    const { user } = useAuth();
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [userId, setUserId] = useState(() => {
-        const saved = localStorage.getItem('antigravity_userId');
-        if (saved) return saved;
-        const newId = `user_${Math.floor(Math.random() * 1000)}`;
-        localStorage.setItem('antigravity_userId', newId);
-        return newId;
-    });
-
-    useEffect(() => {
-        localStorage.setItem('antigravity_userId', userId);
-    }, [userId]);
 
     const chatEndRef = useRef<HTMLDivElement>(null);
     const scrollToBottom = () => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }
@@ -37,7 +28,7 @@ export default function Chat() {
         setIsLoading(true);
 
         try {
-            const result = await api.chat(userId, userMsg);
+            const result = await api.chat(userMsg);
             setMessages(prev => [...prev, { sender: 'ai', text: result.response }]);
         } catch (error: any) {
             console.error("Chat API error:", error);
@@ -68,14 +59,10 @@ export default function Chat() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2 glass-card px-3 py-1.5 rounded-full scale-90">
-                    <span className="text-[9px] text-white/30 uppercase tracking-widest">ID:</span>
-                    <input
-                        type="text"
-                        value={userId}
-                        onChange={(e) => setUserId(e.target.value)}
-                        className="text-[9px] text-white/50 bg-transparent border-none focus:ring-0 p-0 w-16 font-light uppercase tracking-tighter"
-                        title="Unified Health ID"
-                    />
+                    <span className="text-[9px] text-white/30 uppercase tracking-widest">Signed in as:</span>
+                    <span className="text-[9px] text-white/50 font-light tracking-tighter">
+                        {user?.email || '—'}
+                    </span>
                 </div>
             </div>
 

@@ -42,8 +42,8 @@ apiClient.interceptors.response.use(
 );
 
 export const api = {
-    chat: async (userId: string, userInput: string) => {
-        const response = await apiClient.post('/api/chat', { user_id: userId, user_input: userInput });
+    chat: async (userInput: string) => {
+        const response = await apiClient.post('/api/chat', { user_input: userInput });
         return response.data;
     },
     admin: {
