@@ -15,8 +15,8 @@ class EducationAgent(BaseAgent):
             result = self.predictor(user_context=context, user_input=user_input)
             
             return {
-                "response": result.response,
-                "updated_context": {"last_quiz": result.quiz_question}
+                "response": getattr(result, 'response', "Let me share something helpful about diabetes prevention."),
+                "updated_context": {"last_quiz": getattr(result, 'quiz_question', None)}
             }
         except Exception as e:
             # Fallback response if DSPy/LLM fails
