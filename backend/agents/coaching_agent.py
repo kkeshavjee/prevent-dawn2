@@ -20,8 +20,8 @@ class CoachingAgent(BaseAgent):
             result = self.predictor(user_profile=profile_summary, user_input=user_input)
             
             return {
-                "response": result.response,
-                "updated_context": {"suggested_action": result.suggested_action}
+                "response": getattr(result, 'response', "Let me give you some coaching advice on your wellness journey."),
+                "updated_context": {"suggested_action": getattr(result, 'suggested_action', None)}
             }
         except Exception as e:
             # Fallback response if DSPy/LLM fails
