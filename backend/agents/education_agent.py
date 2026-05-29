@@ -2,7 +2,8 @@ from backend.agents.base_agent import BaseAgent
 from backend.models.data_models import AgentState
 from backend.models.signatures import EducationSignature
 import dspy
-
+import logging
+logger = logging.getLogger(__name__)
 class EducationAgent(BaseAgent):
     def __init__(self):
         self.predictor = dspy.Predict(EducationSignature)
@@ -20,7 +21,7 @@ class EducationAgent(BaseAgent):
             }
         except Exception as e:
             # Fallback response if DSPy/LLM fails
-            print(f"[EducationAgent] Error: {e}")
+            logger.error(f"[EducationAgent] Error: {e}")
             
             education_facts = [
                 "Did you know? Prediabetes can often be reversed with lifestyle changes. Just 30 minutes of walking 5 days a week can significantly reduce your risk!",
