@@ -2,6 +2,8 @@ from backend.agents.base_agent import BaseAgent
 from backend.models.data_models import AgentState
 from backend.models.signatures import CoachingSignature
 import dspy
+import logging
+logger = logging.getLogger(__name__)
 
 class CoachingAgent(BaseAgent):
     def __init__(self):
@@ -25,7 +27,7 @@ class CoachingAgent(BaseAgent):
             }
         except Exception as e:
             # Fallback response if DSPy/LLM fails
-            print(f"[CoachingAgent] Error: {e}")
+            logger.error(f"[CoachingAgent] Error: {e}")
             
             name = state.patient_profile.name or "there"
             coaching_tips = [
