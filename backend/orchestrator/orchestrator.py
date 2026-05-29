@@ -8,6 +8,8 @@ from backend.agents.coaching_agent import CoachingAgent
 from backend.services.data_loader import DataLoader
 from backend.services.llm_config import configure_dspy
 import os
+import logging
+logger = logging.getLogger(__name__)
 
 class Orchestrator:
     def __init__(self):
@@ -82,7 +84,7 @@ class Orchestrator:
             }
         except Exception as e:
             # Fallback at orchestrator level
-            print(f"[Orchestrator] Error processing request: {e}")
+            logger.error(f"[Orchestrator] Error processing request: {e}")
             
             fallback_response = "I'm here to help with your diabetes prevention journey. What would you like to know about maintaining a healthy lifestyle?"
             state.conversation_history.append(Message(role="assistant", content=fallback_response))
