@@ -3,6 +3,8 @@ from backend.models.data_models import AgentState
 from backend.models.signatures import IntakeSignature
 import dspy
 import json
+import logging
+logger = logging.getLogger(__name__)
 
 class IntakeAgent(BaseAgent):
     def __init__(self):
@@ -39,7 +41,7 @@ class IntakeAgent(BaseAgent):
             }
         except Exception as e:
             # Fallback response if DSPy/LLM fails
-            print(f"[IntakeAgent] Error: {e}")
+            logger.error(f"[IntakeAgent] Error: {e}")
             
             # Simple name extraction from input
             extracted_name = None
