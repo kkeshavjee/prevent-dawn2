@@ -3,6 +3,9 @@ import json
 import os
 from backend.models.data_models import AgentState, PatientProfile, Message, RiskLevel, Biomarkers
 
+import logging
+logger = logging.getLogger(__name__)
+
 class AsyncPersistence:
     def __init__(self):
         # Default path logic
@@ -41,8 +44,8 @@ class AsyncPersistence:
     async def save_state(self, user_id: str, state: AgentState):
         async with aiosqlite.connect(self.db_path) as db:
             # Serialize complex objects
-            history_json = json.dumps([m.dict() for m in state.conversation_history])
-            profile_json = state.patient_profile.json()
+            history_json = json.dumps([m.model_dump() for m in state.conversation_history])
+            profile_json = state.patient_profile.model_dump__json()
             context_json = json.dumps(state.context_variables)
             
             await db.execute("""
@@ -64,12 +67,12 @@ class AsyncPersistence:
             
             # Robustness: Handle NULL current_agent
             if not current_agent:
-                print(f"Persistence WARNING: Found NULL current_agent for user {user_id}. Defaulting to 'intake'.")
+                logger.warning(f"Persistence WARNING: Found NULL current_agent for user {user_id}. Defaulting to 'intake'.")
                 current_agent = "intake"
             
             # Deserialize
             history = [Message(**m) for m in json.loads(history_raw)]
-            profile = PatientProfile.parse_raw(profile_raw)
+            profile = PatientProfile.model_validate_json(profile_raw)
             context = json.loads(context_raw)
             
             return AgentState(
