@@ -103,6 +103,16 @@ export const authApi = {
     },
 
     resendVerification: async () => {
+
+        forgotPassword: async (email: string) => {
+        const response = await apiClient.post('/auth/forgot-password', { email });
+        return response.data;
+    },
+
+    resetPassword: async (data: { email: string; otp_code: string; new_password: string }) => {
+        const response = await apiClient.post('/auth/reset-password', data);
+        return response.data;
+    },
         const response = await apiClient.post('/auth/resend-verification');
         return response.data;
     },
