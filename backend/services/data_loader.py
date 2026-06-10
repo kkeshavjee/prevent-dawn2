@@ -3,6 +3,9 @@ import os
 from typing import Dict, List, Optional
 from backend.models.data_models import PatientProfile, Biomarkers, RiskLevel
 
+import logging
+logger = logging.getLogger(__name__)
+
 class DataLoader:
     def __init__(self, file_path: str):
         self.file_path = file_path
@@ -13,7 +16,7 @@ class DataLoader:
             return self._cache
 
         if not os.path.exists(self.file_path):
-            print(f"Warning: Data file {self.file_path} not found.")
+            logger.warning(f"Warning: Data file {self.file_path} not found.")
             return {}
 
         try:
@@ -63,11 +66,11 @@ class DataLoader:
                     
                     self._cache[user_id] = profile
                 except Exception as e:
-                    print(f"Error skipping row {row.get('PREVENT_ID')}: {e}")
+                    logger.error(f"Error skipping row {row.get('PREVENT_ID')}: {e}")
                     continue
                     
         except Exception as e:
-            print(f"Error loading excel: {e}")
+            logger.error(f"Error loading excel: {e}")
             return {}
 
         return self._cache
