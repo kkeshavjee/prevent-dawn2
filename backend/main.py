@@ -9,19 +9,21 @@ from backend.auth.router import router as auth_router
 from backend.auth.assignments import router as assignments_router
 from backend.auth.dependencies import get_current_user, get_verified_patient, get_current_admin
 from backend.auth.models import User
+import logging
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler - runs on startup/shutdown."""
     # Startup: Initialize auth database
-    print("Initializing authentication database...")
+    logger.info("Initializing authentication database...")
     init_db()
     seed_admin()  # Create default admin for testing
-    print("Auth database initialized.")
+    logger.info("Auth database initialized.")
     yield
     # Shutdown: cleanup if needed
-    print("Shutting down...")
+    logger.info("Shutting down...")
 
 
 app = FastAPI(
@@ -59,13 +61,13 @@ orchestrator = Orchestrator()
 async def startup_event():
     import os
     if not os.getenv("GOOGLE_API_KEY"):
-        print("Backend started. WARNING: GOOGLE_API_KEY NOT FOUND!")
+        logger.warning("Backend started. WARNING: GOOGLE_API_KEY NOT FOUND!")
     else:
-        print("Backend started. Brain connectivity enabled.")
+        logger.info("Backend started. Brain connectivity enabled.")
     
     # Initialize Database
     await orchestrator.persistence.init_db()
-    print("Backend: Persistence database initialized.")
+    logger.info("Backend: Persistence database initialized.")
 
 # --- System Configuration Endpoints ---
 
@@ -131,7 +133,7 @@ async def chat(request: OrchestratorRequest, current_user: User = Depends(get_cu
             final_response = raw_response.response
         else:
             # Fallback: Stringify the object but log a warning
-            print(f"Backend WARNING: Non-string response received: {type(raw_response)}. Attempting to stringify.")
+            logger.warning(f"Backend WARNING: Non-string response received: {type(raw_response)}. Attempting to stringify.")
             final_response = str(raw_response)
 
         return OrchestratorResponse(
@@ -143,7 +145,7 @@ async def chat(request: OrchestratorRequest, current_user: User = Depends(get_cu
         full_trace = traceback.format_exc()
         error_type = type(e).__name__
         error_msg = str(e) or "No message"
-        print(f"\n--- CHAT ERROR ---\nType: {error_type}\nMessage: {error_msg}\n{full_trace}\n-------------------")
+        logger.error(f"\n--- CHAT ERROR ---\nType: {error_type}\nMessage: {error_msg}\n{full_trace}\n-------------------")
         
         # Friendly error handling for Rate Limits
         if "429" in error_msg or "RateLimitError" in error_type or "Quota exceeded" in error_msg:
