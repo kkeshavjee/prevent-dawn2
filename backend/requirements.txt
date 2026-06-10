@@ -9,3 +9,5 @@ openpyxl
 pandas
 aiosqlite
 openai
+supabase>=2.3.0
+postgrest>=0.16.0
