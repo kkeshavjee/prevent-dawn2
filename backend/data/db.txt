@@ -1,0 +1,110 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.agent_sessions (
+  prevent_id uuid NOT NULL,
+  current_agent text,
+  context_variables jsonb,
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT agent_sessions_pkey PRIMARY KEY (prevent_id),
+  CONSTRAINT agent_sessions_prevent_id_fkey FOREIGN KEY (prevent_id) REFERENCES public.patients(prevent_id)
+);
+CREATE TABLE public.barriers_facilitators (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  prevent_id uuid,
+  content text NOT NULL,
+  type text CHECK (type = ANY (ARRAY['barrier'::text, 'facilitator'::text])),
+  category text CHECK (category = ANY (ARRAY['logistical'::text, 'emotional'::text, 'social'::text, 'physical'::text])),
+  identified_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT barriers_facilitators_pkey PRIMARY KEY (id),
+  CONSTRAINT barriers_facilitators_prevent_id_fkey FOREIGN KEY (prevent_id) REFERENCES public.patients(prevent_id)
+);
+CREATE TABLE public.biomarker_logs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  prevent_id uuid,
+  a1c double precision,
+  fbs double precision,
+  bmi double precision,
+  recorded_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT biomarker_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT biomarker_logs_prevent_id_fkey FOREIGN KEY (prevent_id) REFERENCES public.patients(prevent_id)
+);
+CREATE TABLE public.journey_logs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  prevent_id uuid,
+  stage_from text,
+  stage_to text,
+  reasoning text,
+  transitioned_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT journey_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT journey_logs_prevent_id_fkey FOREIGN KEY (prevent_id) REFERENCES public.patients(prevent_id)
+);
+CREATE TABLE public.llm_interactions (
+  id bigint NOT NULL DEFAULT nextval('llm_interactions_id_seq'::regclass),
+  prevent_id uuid,
+  agent_name text,
+  signature_name text,
+  prompt_input text,
+  response_output text,
+  model_name text,
+  provider text,
+  latency_ms double precision,
+  timestamp timestamp with time zone DEFAULT now(),
+  CONSTRAINT llm_interactions_pkey PRIMARY KEY (id),
+  CONSTRAINT llm_interactions_prevent_id_fkey FOREIGN KEY (prevent_id) REFERENCES public.patients(prevent_id)
+);
+CREATE TABLE public.messages (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  prevent_id uuid,
+  role text CHECK (role = ANY (ARRAY['user'::text, 'assistant'::text])),
+  content text NOT NULL,
+  embedding USER-DEFINED,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT messages_pkey PRIMARY KEY (id),
+  CONSTRAINT messages_prevent_id_fkey FOREIGN KEY (prevent_id) REFERENCES public.patients(prevent_id)
+);
+CREATE TABLE public.patient_health_status (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  prevent_id uuid UNIQUE,
+  readiness_stage text CHECK (readiness_stage = ANY (ARRAY['Precontemplation'::text, 'Contemplation'::text, 'Preparation'::text, 'Action'::text, 'Maintenance'::text, 'Relapse'::text])),
+  risk_level text CHECK (risk_level = ANY (ARRAY['Low'::text, 'Medium'::text, 'High'::text])),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT patient_health_status_pkey PRIMARY KEY (id),
+  CONSTRAINT patient_health_status_prevent_id_fkey FOREIGN KEY (prevent_id) REFERENCES public.patients(prevent_id)
+);
+CREATE TABLE public.patient_physician_assignments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  prevent_id uuid,
+  physician_id uuid,
+  role text DEFAULT 'Primary'::text,
+  assigned_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT patient_physician_assignments_pkey PRIMARY KEY (id),
+  CONSTRAINT patient_physician_assignments_prevent_id_fkey FOREIGN KEY (prevent_id) REFERENCES public.patients(prevent_id),
+  CONSTRAINT patient_physician_assignments_physician_id_fkey FOREIGN KEY (physician_id) REFERENCES public.physicians(id)
+);
+CREATE TABLE public.patients (
+  prevent_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  email text NOT NULL UNIQUE,
+  nickname text NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  last_active timestamp with time zone DEFAULT now(),
+  CONSTRAINT patients_pkey PRIMARY KEY (prevent_id)
+);
+CREATE TABLE public.physicians (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  full_name text NOT NULL,
+  specialty text,
+  license_number text UNIQUE,
+  email text UNIQUE,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT physicians_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  role text NOT NULL CHECK (role = ANY (ARRAY['patient'::text, 'admin'::text, 'health_coach'::text])),
+  prevent_id text UNIQUE,
+  display_name text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
