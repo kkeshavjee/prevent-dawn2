@@ -781,3 +781,40 @@ async def delete_invite_code(
     db.delete(invite)
     db.commit()
     return MessageResponse(message="Invite code deleted")
+
+# ==================== Password Reset ====================
+@router.post("/password-reset/request", response_model=MessageResponse)
+async def request_password_reset(
+    request: PasswordResetRequest,
+    db: Session = Depends(get_db)
+):
+    """Initiate password reset by sending OTP to user's email."""
+    user = db.query(User).filter(User.email == request.email).first()
+    if user and user.is_active:
+        mfa_svc = MFAService(db)
+        otp = mfa_svc.generate_and_save_otp(user, "password_reset")
+        await mfa_svc.send_otp_email(user.email, otp, "password_reset")
+    return MessageResponse(message="If that email is registered, a reset code has been sent.")
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+async def reset_password(
+    request: PasswordResetConfirm,
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request")
+
+    mfa_svc = MFAService(db)
+    success, message = mfa_svc.verify_user_otp(user, request.otp_code, "password_reset")
+    if not success:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
+
+    user.hashed_password = hash_password(request.new_password)
+    db.query(RefreshToken).filter(
+        RefreshToken.user_id == user.id,
+        RefreshToken.revoked == False
+    ).update({"revoked": True})
+    db.commit()
+    return MessageResponse(message="Password reset successfully. Please log in with your new password.")
