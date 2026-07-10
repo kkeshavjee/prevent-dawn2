@@ -1,9 +1,10 @@
-from fastapi import APIRouter
-from typing import List, Dict
+from fastapi import APIRouter, Depends
+from typing import List
 from pydantic import BaseModel
-from backend.orchestrator.orchestrator import Orchestrator
+from backend.auth.rbac import require_role, ADMIN
+from backend.auth.dependencies import CurrentUser
 
-router = APIRouter(prefix="/api/admin", tags=["admin"])
+router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_role(ADMIN))])
 
 # We need a way to access the orchestrator instance.
 # For now, we'll import it from main (circular import risk, but okay for MVP if structured right,

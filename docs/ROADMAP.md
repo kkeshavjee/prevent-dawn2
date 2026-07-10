@@ -4,18 +4,22 @@
 > **Purpose:** Tracking all project tasks and their dependencies.
 > **Rule:** Select "leaf nodes" (tasks with no un-met dependencies) for execution.
 
-## Active Feature: Integration Tests
-*   [/] **Plan & Design**
-    *   [x] Select Task & Create Branch
-    *   [x] Create refined implementation plan: [docs/plans/implementation_plan_integration_tests.md](docs/plans/implementation_plan_integration_tests.md)
-    *   [ ] Read PRD Testing Requirements
+## Active Feature: Orchestrator Mediator
 *   [ ] **Implementation**
-    *   [x] Create `tests/integration/` (Initial stubs completed)
-    *   [x] Implement End-to-End API tests
+    *   [ ] Decouple agent interactions — [Issue #5](https://github.com/kkeshavjee/prevent-antigravity/issues/5)
 
 ## Completed Features
+*   [x] **Authentication & RBAC**
+    *   [x] Supabase Auth integration (JWT verification)
+    *   [x] `backend/auth/` module — `dependencies.py`, `rbac.py`
+    *   [x] `profiles` table + RLS policies (`backend/db/migrations/001_auth_tables.sql`)
+    *   [x] All endpoints protected with role-based access (`patient`, `admin`, `health_coach`)
+    *   [x] `user_id` now derived from verified JWT, not request body
+    *   [x] Integration tests updated with `auth_client` fixture (4 passing)
+*   [x] **Integration Tests**: Comprehensive backend testing
+    *   [x] End-to-End API tests (`tests/integration/test_api_v1.py`)
+    *   [x] Health check, audit trail, state machine, resilience, malformed response tests
 *   [x] **Integrate MCP Server**: [Issue #3](https://github.com/kkeshavjee/prevent-antigravity/issues/3)
-*   [x] **State Machine**: [Issue #6](https://github.com/kkeshavjee/prevent-antigravity/issues/6)
 *   [x] **State Machine**: [Issue #6](https://github.com/kkeshavjee/prevent-antigravity/issues/6) - Define Patient Journey states.
 *   [x] **Refactor Project Structure**
 *   [x] **Task Decoupled Planning (TDP)**
@@ -41,7 +45,7 @@
 
 ### Phase 1: Foundation (Infrastructure)
 *   [x] **Integration Tests**: Comprehensive backend testing to ensure stability before adding agents.
-*   [ ] **Authentication & RBAC**: Secure the app before adding "Patient Matching".
+*   [x] **Authentication & RBAC**: Supabase Auth + JWT + role-based endpoint protection.
 *   [ ] **Frontend Refactor**: Apply global "Prismatic" theme to ensure UI consistency for new features.
 *   [x] **Repository Pattern**: [Issue #7](https://github.com/kkeshavjee/prevent-antigravity/issues/7) - Abstract data access.
 *   [x] **State Machine**: [Issue #6](https://github.com/kkeshavjee/prevent-antigravity/issues/6) - Define Patient Journey states.

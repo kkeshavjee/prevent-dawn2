@@ -10,3 +10,4 @@ pandas
 aiosqlite
 openai
 supabase
+python-jose[cryptography]

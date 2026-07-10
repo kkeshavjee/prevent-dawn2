@@ -1,8 +1,11 @@
-from fastapi import FastAPI, HTTPException
+import os
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from backend.orchestrator.orchestrator import Orchestrator
 from backend.models.data_models import OrchestratorRequest, OrchestratorResponse, PatientProfile
+from backend.auth.dependencies import get_current_user, CurrentUser
+from backend.auth.rbac import require_role, PATIENT, ADMIN, HEALTH_COACH
 
 app = FastAPI()
 
@@ -26,7 +29,6 @@ orchestrator = Orchestrator()
 
 @app.on_event("startup")
 async def startup_event():
-    import os
     if not os.getenv("GOOGLE_API_KEY"):
         print("Backend started. WARNING: GOOGLE_API_KEY NOT FOUND!")
     else:
@@ -45,7 +47,7 @@ class KeyConfigRequest(BaseModel):
 from backend.services.llm_config import configure_dspy
 
 @app.post("/api/config/key")
-async def switch_api_key(config: KeyConfigRequest):
+async def switch_api_key(config: KeyConfigRequest, _: CurrentUser = Depends(require_role(ADMIN))):
     """
     Switch the active API Key at runtime.
     """
@@ -82,7 +84,7 @@ async def switch_api_key(config: KeyConfigRequest):
     return {"status": "success", "message": f"Switched to {config.key_type} key."}
 
 @app.get("/api/config/info")
-async def get_config_info():
+async def get_config_info(_: CurrentUser = Depends(require_role(ADMIN))):
     """
     Observability Endpoint: Returns currently active LLM stack and configuration.
     Use this to verify which API keys/Providers are enabled and their priority order.
@@ -112,9 +114,13 @@ async def chat_warmup():
 # --- Chat Endpoints ---
 
 @app.post("/api/chat", response_model=OrchestratorResponse)
-async def chat(request: OrchestratorRequest):
+async def chat(
+    request: OrchestratorRequest,
+    current_user: CurrentUser = Depends(require_role(PATIENT, HEALTH_COACH)),
+):
     try:
-        result = await orchestrator.process_request(request.user_id, request.user_input)
+        # user_id comes from the verified JWT, not the request body
+        result = await orchestrator.process_request(current_user.id, request.user_input)
         
         # Robustly handle the response content
         raw_response = result.get("response")
@@ -151,19 +157,14 @@ async def chat(request: OrchestratorRequest):
         raise HTTPException(status_code=500, detail=detail_msg)
 
 from backend.services.data_loader import DataLoader
-import os
 
-# Initialize data loader (assuming file is in data/ or root)
-# Adjust path as necessary. For now, using a relative path assuming execution from root
-# Adjust path as necessary. Now in backend/data/
-# Using absolute path logic similar to orchestrator or relative to this file
 data_path = os.path.join(os.path.dirname(__file__), "data", "PREVENT_Inform_Table_V2 (2).xlsx")
 # Fallback hardcoded if needed, but relative is safer now
 EXCEL_PATH = data_path 
 data_loader = DataLoader(EXCEL_PATH)
 
 @app.get("/api/patient/lookup", response_model=PatientProfile)
-async def lookup_patient(name: str):
+async def lookup_patient(name: str, _: CurrentUser = Depends(require_role(ADMIN, HEALTH_COACH))):
     profile = data_loader.get_patient_by_name(name)
     if not profile:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -175,7 +176,7 @@ from backend.api.admin import router as admin_router
 app.include_router(admin_router)
 
 @app.get("/api/debug/state/{user_id}")
-async def get_state_debug(user_id: str):
+async def get_state_debug(user_id: str, _: CurrentUser = Depends(require_role(ADMIN))):
     """
     Debug endpoint for integration tests to verify internal state progression.
     NOT for production use.
