@@ -1,4 +1,4 @@
-# Contributing to Antigravity
+# Contributing to PREVENT Dawn
 
 Welcome! This guide outlines our development workflow and standards to help us build a secure, personalized diabetes prevention platform.
 
